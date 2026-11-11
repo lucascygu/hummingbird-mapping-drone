@@ -48,7 +48,10 @@
             # Jetson and use hummingbird_bringup/map_recorder instead; set true for short runs.
             map_en: false
             scan_publish_en:  true
-            dense_publish_en: false
+            # HB: upstream false. false publishes each scan after the 0.5 m voxel filter
+            # (filter_size_surf), which leaves map_recorder with a very sparse map. true publishes
+            # every point FAST-LIO kept (1 of point_filter_num), i.e. the actual mapping product.
+            dense_publish_en: true
             scan_bodyframe_pub_en: true
 
         pcd_save:

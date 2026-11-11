@@ -1,10 +1,12 @@
 # Generated / assisted by Grok
+# Extended by Claude: map_tiler, mission_gate site config, typed launch arguments, clean shutdown
 """Full Hummingbird mapping stack on the Jetson.
 
   Livox Mid-360 -> livox_ros_driver2 (/livox/lidar CustomMsg, /livox/imu)
                -> FAST-LIO2 (/Odometry, /cloud_registered, TF camera_init->body)
                -> hummingbird_px4_bridge (/fmu/in/vehicle_visual_odometry, estimator input only)
-               -> map_recorder (/hummingbird/save_map)
+               -> map_recorder (/hummingbird/save_map, autosave, save on shutdown)
+               -> map_tiler (optional: /hummingbird/map/tile height tiles for the ground station)
   + static TFs, optional MicroXRCEAgent, optional RViz, optional mission_gate.
 
 Nothing in this launch arms the vehicle, switches modes or sends setpoints to PX4.
@@ -22,6 +24,7 @@ from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 
 
 def generate_launch_description():
@@ -46,7 +49,16 @@ def generate_launch_description():
         DeclareLaunchArgument("bridge_config", default_value=os.path.join(
             get_package_share_directory("hummingbird_px4_bridge"), "config", "px4_bridge.yaml")),
         DeclareLaunchArgument("with_map_recorder", default_value="true"),
+        DeclareLaunchArgument("map_autosave_s", default_value="60.0",
+                              description="Rolling autosave period of the voxel map (0 = off)"),
+        DeclareLaunchArgument("map_max_points", default_value="10000000",
+                              description="Voxel budget of map_recorder (~50 bytes per voxel)"),
+        DeclareLaunchArgument("with_map_tiler", default_value="false",
+                              description="Publish height tiles on /hummingbird/map/tile"),
         DeclareLaunchArgument("with_mission_gate", default_value="false"),
+        DeclareLaunchArgument("gate_config", default_value=os.path.join(
+            get_package_share_directory("hummingbird_task_agent"), "config", "mission_gate.yaml"),
+            description="Site geofence / speed limits for mission_gate"),
         DeclareLaunchArgument("rviz", default_value="false"),
         DeclareLaunchArgument("start_xrce_agent", default_value="false",
                               description="Start MicroXRCEAgent on the TELEM2 serial link"),
@@ -67,18 +79,32 @@ def generate_launch_description():
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(
                 get_package_share_directory("hummingbird_px4_bridge"), "launch", "px4_bridge.launch.py")),
-            launch_arguments={"bridge_config": L("bridge_config")}.items(),
+            launch_arguments={"bridge_config": L("bridge_config"),
+                              "use_sim_time": L("use_sim_time")}.items(),
             condition=IfCondition(L("with_px4_bridge")),
         ),
         Node(
             package="hummingbird_bringup", executable="map_recorder", name="hummingbird_map_recorder",
-            parameters=[{"output_dir": L("map_dir"), "voxel_size": L("map_voxel"),
-                         "use_sim_time": L("use_sim_time")}],
+            # Explicit types: "map_voxel:=1" would otherwise arrive as an integer and be rejected.
+            parameters=[{"output_dir": L("map_dir"),
+                         "voxel_size": ParameterValue(L("map_voxel"), value_type=float),
+                         "autosave_period_s": ParameterValue(L("map_autosave_s"), value_type=float),
+                         "max_points": ParameterValue(L("map_max_points"), value_type=int),
+                         "use_sim_time": ParameterValue(L("use_sim_time"), value_type=bool)}],
             condition=IfCondition(L("with_map_recorder")), output="screen",
+            # The recorder writes the map on shutdown; give a large map time to reach the disk.
+            sigterm_timeout="30", sigkill_timeout="30",
         ),
         Node(
-            package="hummingbird_task_agent", executable="mission_gate", name="hummingbird_mission_gate",
-            condition=IfCondition(L("with_mission_gate")), output="screen",
+            package="hummingbird_bringup", executable="map_tiler", name="hummingbird_map_tiler",
+            parameters=[{"use_sim_time": ParameterValue(L("use_sim_time"), value_type=bool)}],
+            condition=IfCondition(L("with_map_tiler")), output="screen",
+        ),
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(os.path.join(
+                get_package_share_directory("hummingbird_task_agent"), "launch", "mission_gate.launch.py")),
+            launch_arguments={"gate_config": L("gate_config")}.items(),
+            condition=IfCondition(L("with_mission_gate")),
         ),
         ExecuteProcess(
             cmd=["MicroXRCEAgent", "serial", "--dev", L("xrce_dev"), "-b", L("xrce_baud")],

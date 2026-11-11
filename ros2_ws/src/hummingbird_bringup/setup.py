@@ -27,6 +27,9 @@ setup(
     entry_points={
         "console_scripts": [
             "map_recorder = hummingbird_bringup.map_recorder:main",
+            "map_tiler = hummingbird_bringup.map_tiler:main",
+            "mid360_sim = hummingbird_bringup.mid360_sim:main",
+            "sim_check = hummingbird_bringup.sim_check:main",
             "pcd_export = hummingbird_bringup.pcd_export:main",
         ],
     },

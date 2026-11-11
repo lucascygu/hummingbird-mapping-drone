@@ -28,6 +28,8 @@ def test_fast_lio_yaml_matches_livox_driver():
     assert p["mapping"]["extrinsic_T"] == [-0.011, -0.02329, 0.04412]
     assert len(p["mapping"]["extrinsic_R"]) == 9
     assert p["pcd_save"]["pcd_save_en"] is True
+    # map_recorder builds the saved map from /cloud_registered: it must carry the dense scan.
+    assert p["publish"]["scan_publish_en"] is True and p["publish"]["dense_publish_en"] is True
 
 
 def test_static_tf_lidar_offset_matches_fast_lio_extrinsic():

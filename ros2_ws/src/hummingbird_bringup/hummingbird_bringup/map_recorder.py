@@ -1,4 +1,5 @@
 # Generated / assisted by Grok
+# Reviewed and extended by Claude (autosave, save on shutdown, atomic writes)
 """ROS 2 node: accumulate FAST-LIO /cloud_registered into a voxel map and save it as PCD.
 
 Why not only FAST-LIO's own /map_save? In FAST_LIO_ROS2 (ros2 @ 2fffc57) /map_save writes
@@ -7,6 +8,15 @@ re-published every second), and the on-shutdown ``scans.pcd`` path is commented 
 keeps a bounded voxel map instead. Both can be used; see scripts/save_map.sh.
 
 Service: /hummingbird/save_map (std_srvs/Trigger) -> writes <output_dir>/hummingbird_map_<time>.pcd
+
+The map only lives in RAM, so it is also written without being asked:
+  * every ``autosave_period_s`` to <output_dir>/hummingbird_map_autosave.pcd (one rolling file,
+    replaced atomically), so a crash or an empty battery costs at most one period of data;
+  * once more on shutdown (Ctrl-C / launch stop) to a time-stamped file, if anything changed
+    since the last save.
+
+Memory: about 50 bytes per voxel, plus a short peak of roughly 3x while merging. The default
+budget of 10 million voxels is ~0.5 GB steady; lower ``max_points`` on a loaded Jetson.
 """
 
 from __future__ import annotations
@@ -17,9 +27,12 @@ import time
 import numpy as np
 
 from hummingbird_bringup import pcd_io
+from hummingbird_bringup._runtime import init_ros, spin_until_stopped
 
 
 _OFF = 1 << 20  # 21 bits per axis -> +-2^20 voxels (+-52 km at 5 cm)
+
+AUTOSAVE_NAME = "hummingbird_map_autosave.pcd"
 
 
 def _pack(keys: np.ndarray) -> np.ndarray:
@@ -30,7 +43,7 @@ def _pack(keys: np.ndarray) -> np.ndarray:
 class VoxelMap:
     """One centroid per voxel, fully vectorised (np.unique on packed keys). Testable without ROS."""
 
-    def __init__(self, voxel: float, max_points: int = 20_000_000, consolidate_every: int = 2_000_000):
+    def __init__(self, voxel: float, max_points: int = 10_000_000, consolidate_every: int = 2_000_000):
         if voxel <= 0:
             raise ValueError("voxel must be > 0")
         self.voxel = float(voxel)
@@ -42,6 +55,8 @@ class VoxelMap:
         self._c = np.zeros(0)
         self._pending = []
         self._pending_n = 0
+        # Bumped by every add() that contributed points; lets a caller skip redundant saves.
+        self.revision = 0
 
     def __len__(self):
         self._consolidate()
@@ -56,8 +71,12 @@ class VoxelMap:
         inten = np.zeros(xyz.shape[0]) if intensity is None else np.asarray(intensity, np.float64).reshape(-1)[ok]
         keys = np.floor(xyz / self.voxel).astype(np.int64)
         inrange = np.all(np.abs(keys) < _OFF, axis=1)
-        self._pending.append((_pack(keys[inrange]), xyz[inrange], inten[inrange], np.ones(int(inrange.sum()))))
-        self._pending_n += int(inrange.sum())
+        n = int(inrange.sum())
+        if n == 0:
+            return
+        self._pending.append((_pack(keys[inrange]), xyz[inrange], inten[inrange], np.ones(n)))
+        self._pending_n += n
+        self.revision += 1
         if self._pending_n >= self.consolidate_every:
             self._consolidate()
 
@@ -90,9 +109,52 @@ class VoxelMap:
         return xyz.astype(np.float32), inten.astype(np.float32)
 
     def save(self, path: str) -> int:
+        """Write the map as binary PCD (atomically: temp file + rename). Returns the point count."""
         xyz, inten = self.points()
         pcd_io.write_pcd(path, xyz, inten, binary=True)
         return xyz.shape[0]
+
+
+class MapSaver:
+    """Decides when and where the map is written. No ROS, so the policy is unit-testable."""
+
+    def __init__(self, vmap: VoxelMap, out_dir: str, clock=time.time):
+        self.vmap = vmap
+        self.out_dir = out_dir
+        self._clock = clock
+        self._saved_revision = 0       # revision covered by the last save of any kind
+
+    def timestamped_path(self) -> str:
+        stamp = time.strftime("%Y%m%d_%H%M%S", time.localtime(self._clock()))
+        return os.path.join(self.out_dir, f"hummingbird_map_{stamp}.pcd")
+
+    @property
+    def dirty(self) -> bool:
+        return self.vmap.revision != self._saved_revision
+
+    def save_now(self) -> tuple:
+        """Operator request: always write a new time-stamped file. Returns (path, points)."""
+        path = self.timestamped_path()
+        revision = self.vmap.revision
+        n = self.vmap.save(path)
+        self._saved_revision = revision
+        return path, n
+
+    def autosave(self):
+        """Rolling file; skipped when nothing changed. Returns (path, points) or None."""
+        if not self.dirty or len(self.vmap) == 0:
+            return None
+        path = os.path.join(self.out_dir, AUTOSAVE_NAME)
+        revision = self.vmap.revision
+        n = self.vmap.save(path)
+        self._saved_revision = revision
+        return path, n
+
+    def save_on_exit(self):
+        """Time-stamped file at shutdown, unless the map is empty or already saved."""
+        if not self.dirty or len(self.vmap) == 0:
+            return None
+        return self.save_now()
 
 
 def _cloud_to_numpy(msg):
@@ -110,45 +172,67 @@ def _cloud_to_numpy(msg):
 
 
 def main(args=None):
-    import rclpy
     from rclpy.node import Node
     from sensor_msgs.msg import PointCloud2
     from std_srvs.srv import Trigger
 
-    rclpy.init(args=args)
+    init_ros(args)
     node = Node("hummingbird_map_recorder")
     topic = node.declare_parameter("cloud_topic", "/cloud_registered").value
     voxel = float(node.declare_parameter("voxel_size", 0.05).value)
     out_dir = os.path.expanduser(node.declare_parameter("output_dir", "~/hummingbird_maps").value)
-    max_pts = int(node.declare_parameter("max_points", 20_000_000).value)
+    max_pts = int(node.declare_parameter("max_points", 10_000_000).value)
+    autosave_period = float(node.declare_parameter("autosave_period_s", 60.0).value)
+    save_on_exit = bool(node.declare_parameter("save_on_exit", True).value)
     os.makedirs(out_dir, exist_ok=True)
     vmap = VoxelMap(voxel, max_pts)
+    saver = MapSaver(vmap, out_dir)
 
     def on_cloud(msg):
         xyz, inten = _cloud_to_numpy(msg)
         vmap.add(xyz, inten)
 
     def on_save(_req, res):
-        path = os.path.join(out_dir, time.strftime("hummingbird_map_%Y%m%d_%H%M%S.pcd"))
         try:
-            n = vmap.save(path)
+            path, n = saver.save_now()
             res.success, res.message = True, f"saved {n} points to {path}"
         except Exception as exc:  # noqa: BLE001 - report any IO error to the caller
             res.success, res.message = False, f"save failed: {exc}"
         node.get_logger().info(res.message)
         return res
 
-    node.create_subscription(PointCloud2, topic, on_cloud, 10)
+    def on_autosave():
+        try:
+            saved = saver.autosave()
+        except Exception as exc:  # noqa: BLE001 - a full disk must not kill the recorder
+            node.get_logger().error(f"autosave failed: {exc}")
+            return
+        if saved:
+            node.get_logger().info(f"autosaved {saved[1]} points to {saved[0]}")
+
+    # Depth 50: a merge of a large map can block this callback for a second or more.
+    node.create_subscription(PointCloud2, topic, on_cloud, 50)
     node.create_service(Trigger, "/hummingbird/save_map", on_save)
-    node.get_logger().info(f"map_recorder: {topic} voxel={voxel} m -> {out_dir}")
-    try:
-        rclpy.spin(node)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        node.destroy_node()
-        if rclpy.ok():
-            rclpy.shutdown()
+    if autosave_period > 0:
+        node.create_timer(autosave_period, on_autosave)
+    node.get_logger().info(
+        f"map_recorder: {topic} voxel={voxel} m -> {out_dir} "
+        f"(autosave every {autosave_period:g} s, save_on_exit={save_on_exit})"
+    )
+
+    def on_exit():
+        # Runs after the spin loop stopped and before ROS shuts down. Launch only escalates to
+        # SIGKILL after sigterm_timeout + sigkill_timeout (see mapping.launch.py).
+        if not save_on_exit:
+            return
+        try:
+            saved = saver.save_on_exit()
+            if saved:
+                node.get_logger().info(f"saved {saved[1]} points to {saved[0]} on shutdown")
+        except Exception as exc:  # noqa: BLE001 - nothing left to do but report it
+            node.get_logger().error(f"save on shutdown failed: {exc}")
+
+    spin_until_stopped(node, before_shutdown=on_exit)
 
 
 if __name__ == "__main__":
