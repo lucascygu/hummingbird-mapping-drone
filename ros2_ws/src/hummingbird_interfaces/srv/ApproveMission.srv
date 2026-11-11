@@ -1,0 +1,13 @@
+# Generated / assisted by Claude
+# Human approval for a draft that mission_gate parked after receiving a GroundTask.
+# The approval is valid for exactly this draft and is not remembered: a refused call leaves the
+# draft pending, an accepted call consumes it. Drafts expire (mission_gate parameter draft_ttl_s).
+# Only an operator UI or a hardware switch should call this service; planners / LLM agents must not.
+
+string mission_id
+bool arm_approval
+bool takeoff_approval
+---
+bool accepted
+string reason
+string mission_id

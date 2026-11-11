@@ -17,6 +17,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/MapTile.msg"
   "msg/HighLevelSetpoint.msg"
   "srv/RequestMission.srv"
+  "srv/ApproveMission.srv"
   DEPENDENCIES builtin_interfaces std_msgs geometry_msgs
 )
 
