@@ -1,0 +1,19 @@
+# Submit a high-level mission for validation by mission_gate.
+# arm_approval and takeoff_approval must be explicit; the default is false.
+
+string mission_id
+string mission_type    # explore | map_region | inspect | loiter | rtl | land
+string description
+string frame_id
+geometry_msgs/Pose[] waypoints
+
+bool arm_approval
+bool takeoff_approval
+
+# If 0, the gate uses its configured default geofence, not "unlimited".
+float64 geofence_max_altitude_m
+float64 geofence_radius_m
+---
+bool accepted
+string reason
+string mission_id
