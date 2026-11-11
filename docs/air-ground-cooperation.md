@@ -1,5 +1,7 @@
 # 空地协同接口草图 Air–Ground Cooperation
 
+本文档由 Grok 撰写/协助
+
 本文是接口草图，用于地面站（人或地面机器人）与蜂鸟空中节点协同测绘 / 侦察。消息定义见 `hummingbird_interfaces`。这些话题名是约定，**尚未与实机或 Ryan 的重建代码联调**。
 
 ## 角色

@@ -1,3 +1,4 @@
+# Generated / assisted by Grok
 # A high-level task issued by a ground station or teammate.
 # This is not an actuator command.
 
