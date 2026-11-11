@@ -135,3 +135,27 @@ def test_fastlio_covariance_index_swap():
 def test_normalize_rejects_zero():
     with pytest.raises(ValueError):
         f.q_normalize((0.0, 0.0, 0.0, 0.0))
+
+
+# --------------------------------------------------------------------------- added by Claude
+def test_rotate_variance_identity_and_quarter_turns():
+    var = (1.0, 4.0, 9.0)
+    assert f.rotate_variance(var, (1.0, 0.0, 0.0, 0.0)) == pytest.approx(var)
+    assert f.rotate_variance(var, f.q_from_rpy(0.0, 0.0, math.pi / 2)) == pytest.approx((4.0, 1.0, 9.0))
+    assert f.rotate_variance(var, f.q_from_rpy(math.pi / 2, 0.0, 0.0)) == pytest.approx((1.0, 9.0, 4.0))
+    assert f.rotate_variance(var, f.q_from_rpy(math.pi, 0.0, 0.0)) == pytest.approx(var)
+
+
+@pytest.mark.parametrize("seed", range(10))
+def test_rotate_variance_matches_matrix_definition(seed):
+    rng = random.Random(seed)
+    q = rand_q(rng)
+    var = tuple(rng.uniform(0.01, 2.0) for _ in range(3))
+    r = f.q_to_matrix(q)
+    d = ((var[0], 0, 0), (0, var[1], 0), (0, 0, var[2]))
+    rt = tuple(tuple(r[j][i] for j in range(3)) for i in range(3))
+    full = matmul(matmul(r, d), rt)
+    out = f.rotate_variance(var, q)
+    assert out == pytest.approx((full[0][0], full[1][1], full[2][2]))
+    assert sum(out) == pytest.approx(sum(var))        # a rotation preserves the trace
+    assert min(out) >= min(var) - 1e-12 and max(out) <= max(var) + 1e-12

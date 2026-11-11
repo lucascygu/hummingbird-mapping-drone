@@ -1,4 +1,5 @@
 # Generated / assisted by Grok
+# Extended by Claude: rotate_variance
 """Pure-python frame conversion helpers (no ROS, no numpy) so they can be unit-tested anywhere.
 
 Conventions
@@ -159,6 +160,16 @@ def variance_flu_to_frd(var: Vec3) -> Vec3:
 
 def variance_enu_to_ned(var: Vec3) -> Vec3:
     return (var[1], var[0], var[2])
+
+
+def rotate_variance(var: Vec3, q: Quat) -> Vec3:
+    """Diagonal of ``R diag(var) R^T`` for ``R = R(q)``: per-axis variances seen from a rotated frame.
+
+    Off-diagonal terms are dropped because ``VehicleOdometry`` only carries a diagonal. For a
+    mount rotated by a multiple of 90 degrees this is exact (the variances are just permuted).
+    """
+    r = q_to_matrix(q)
+    return tuple(sum(r[i][j] * r[i][j] * var[j] for j in range(3)) for i in range(3))
 
 
 # --------------------------------------------------------------------------- covariance helpers
