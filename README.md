@@ -100,6 +100,20 @@ ros2 launch hummingbird_task_agent mission_gate.launch.py
 
 `mission_gate` 的纯逻辑可用 `python3 -m py_compile` 做语法检查；**不代表已在 PX4 或实机上验证**。
 
+
+## 相关项目：英伟达小鸭子 / Open Duck Mini
+
+用户提到的「英伟达小鸭子」，对应的是 Disney **BDX** 风格开源迷你鸭机器人，以及由 NVIDIA 等发起的 **Newton** 物理引擎（常在 GTC 一类场合与仿真 / 具身项目一起出现）。这些仓库**不是**本无人机飞控栈的一部分，只作为相关具身智能项目 fork 到同一账号下便于查阅。本仓库也没有导入它们的源码。
+
+| 项目 | 作用 | 本账号 fork | 上游 |
+| --- | --- | --- | --- |
+| Open Duck Mini | 开源迷你 BDX 机器人（硬件 / BOM / 设计中枢，约 42 cm，Apache-2.0） | [lucascygu/Open_Duck_Mini](https://github.com/lucascygu/Open_Duck_Mini) | [apirrone/Open_Duck_Mini](https://github.com/apirrone/Open_Duck_Mini) |
+| Open Duck Mini Runtime | 实机运行时 | [lucascygu/Open_Duck_Mini_Runtime](https://github.com/lucascygu/Open_Duck_Mini_Runtime) | [apirrone/Open_Duck_Mini_Runtime](https://github.com/apirrone/Open_Duck_Mini_Runtime) |
+| Open Duck Playground | Open Duck 的 MuJoCo Playground RL 环境 | [lucascygu/Open_Duck_Playground](https://github.com/lucascygu/Open_Duck_Playground) | [apirrone/Open_Duck_Playground](https://github.com/apirrone/Open_Duck_Playground) |
+| Newton | 基于 NVIDIA Warp 的开源 GPU 物理引擎（Linux Foundation 项目，由 Disney Research、Google DeepMind 与 NVIDIA 发起） | [lucascygu/newton](https://github.com/lucascygu/newton) | [newton-physics/newton](https://github.com/newton-physics/newton) |
+
+未把其他同名社区衍生仓库（例如第三方 Viewer、HAT、非官方 Playground 实验）一并 fork；上面四个是上游本体与同作者的运行时 / 训练场，以及 NVIDIA 参与发起的 Newton 引擎。
+
 ## 许可
 
 本仓库中**原创**的文档、接口定义与 `hummingbird_task_agent` 骨架以 [MIT License](LICENSE) 发布。
@@ -112,5 +126,7 @@ ros2 launch hummingbird_task_agent mission_gate.launch.py
 | [Livox-SDK/livox_ros_driver2](https://github.com/Livox-SDK/livox_ros_driver2)、[Livox-SDK/Livox-SDK2](https://github.com/Livox-SDK/Livox-SDK2) | 上游 `LICENSE.txt` 写明相应部分为 MIT（附 Livox 说明） |
 | [ros-navigation/navigation2](https://github.com/ros-navigation/navigation2) | 混合许可：按各包 `package.xml`；未另行标注的文件为 Apache-2.0；另有 LGPL-2.1-or-later、BSD-3-Clause |
 | [PX4/PX4-Autopilot](https://github.com/PX4/PX4-Autopilot)、[PX4/px4_ros_com](https://github.com/PX4/px4_ros_com)、[PX4/px4_msgs](https://github.com/PX4/px4_msgs) | BSD-3-Clause |
+| [newton-physics/newton](https://github.com/newton-physics/newton)、[apirrone/Open_Duck_Mini](https://github.com/apirrone/Open_Duck_Mini) | Apache-2.0（Newton 文档为 CC-BY-4.0） |
+| [apirrone/Open_Duck_Mini_Runtime](https://github.com/apirrone/Open_Duck_Mini_Runtime)、[apirrone/Open_Duck_Playground](https://github.com/apirrone/Open_Duck_Playground) | 上游根目录未见 LICENSE / `pyproject.toml` 也未声明许可证；fork 仅作存档，不改许可、不把它们当成 MIT |
 
 若后续把 GPL-2.0 的 FAST-LIO2 链进同一发行物，发行许可需要按 GPL 义务另行评估，不能只看本仓库的 MIT。
