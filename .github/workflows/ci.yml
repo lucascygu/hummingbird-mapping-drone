@@ -9,11 +9,12 @@
 #   docker  builds docker/Dockerfile; manual only (Actions tab -> CI -> Run workflow), it is slow
 #
 # None of this touches a flight controller: there is no PX4 in the loop.
+# Everything runs on x86_64; the Jetson (aarch64) build is still unverified.
 name: CI
 
 on:
   push:
-    branches: [main, ryan-rebuild]
+    branches: [main]      # other branches are covered by their pull request (avoids running twice)
   pull_request:
   workflow_dispatch:
 

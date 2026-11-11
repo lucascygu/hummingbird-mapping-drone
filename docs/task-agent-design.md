@@ -76,7 +76,7 @@ flowchart LR
 
 ## 尚未验证
 
-- 未在 Jetson 或 Pixhawk 上运行（单测和进程内 ROS 测试在云端 ROS 2 Jazzy 上通过）。
+- 未在 Jetson 或 Pixhawk 上运行（单测和进程内 ROS 测试在 x86_64 的 ROS 2 Humble 和 Jazzy 上通过）。
 - 未与 QGroundControl 的 arm 流程对接。
 - Geofence 默认数值只是开发占位，部署前必须改成场地实测范围。
 - geofence 在请求自带的坐标系里直接判断，所以 `allowed_frames` 里列出的坐标系必须与 `home_xyz` 同原点、同朝向；目前没有做 TF 变换。

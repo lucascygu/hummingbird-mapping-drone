@@ -9,7 +9,7 @@
 | 层 | 状态 |
 | --- | --- |
 | 飞控 | PX4 v1.16.1（团队已刷、已试飞）。Jetson↔Pixhawk 的数据线**还没接** |
-| 感知 | 驱动与 FAST-LIO2 的启动和配置已写好，用假 Mid-360 在仿真里跑通；真机上团队已做过手持和机载建图 |
+| 感知 | 驱动与 FAST-LIO2 的启动和配置已写好，用假 Mid-360 在仿真里跑通（x86_64，Humble 和 Jazzy）；真机上团队已做过手持和机载建图 |
 | 建图 | `map_recorder`（体素地图、自动保存）和 `map_tiler`（`MapTile` 高度分块）已实现并在仿真里验证 |
 | LIO → PX4 | `hummingbird_px4_bridge` 已实现，对照 PX4 v1.16.1 源码核对过；**没有在 PX4 SITL 或真机上验证** |
 | 导航 | **没有实现**。没有任何节点把 `HighLevelSetpoint` 变成 PX4 的 setpoint |

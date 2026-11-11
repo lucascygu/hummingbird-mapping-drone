@@ -118,7 +118,7 @@ ros2_ws/src/
 src/                          # 预留给 Ryan 放入重建代码
 ```
 
-在已安装 ROS 2 的环境中（已在 ROS 2 Jazzy 上 `colcon build` 并跑过测试；**没有上过实机**）：
+在已安装 ROS 2 的环境中（已在 x86_64 的 ROS 2 Humble 和 Jazzy 上 `colcon build` 并跑过测试，GitHub Actions 每次推送都会重跑；**没有上过实机，也没有在 Jetson 上编译过**）：
 
 ```bash
 bash scripts/run_tests.sh                      # 纯 Python 单测，不需要 ROS

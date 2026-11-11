@@ -4,7 +4,7 @@
 
 > 状态：**由助手根据硬件规格重建，等待 Ryan 审核**。Ryan 原来的代码已丢失，这里不是他的原代码。
 > 分支：`ryan-rebuild`。**没有上过真机，也没有在 Jetson 上编译过。**
-> 已在云端 x86_64 上把整条链路（假 Mid-360 → FAST-LIO2 → 桥接 / 存图 / 分块）跑通并对照真值打分，见"验证记录"。
+> 已在 x86_64 的 ROS 2 Humble 和 Jazzy 上把整条链路（假 Mid-360 → FAST-LIO2 → 桥接 / 存图 / 分块）编译、跑通并对照真值打分，见"验证记录"。
 
 ## 数据流
 
@@ -133,7 +133,7 @@ bash scripts/sim_e2e_test.sh 46 lidar_clock:=boot                        # 模�
 
 - **`HighLevelSetpoint` → PX4 的执行器**（offboard 跟踪）。这是飞行控制代码，在没有 SITL 闭环验证之前不应该写进来；Grok 当时有意留空，这次也没有补。
 - **PX4 SITL 里验证 EV 融合**。桥接的消息格式、话题名、QoS、时间戳处理都对照 PX4 v1.16.1 源码核对过，但没有真正接到一个运行中的 PX4 上。
-- Jetson 上的实际编译、`docker/Dockerfile`、`scripts/setup_jetson_native.sh` 的实跑。
+- Jetson（aarch64）上的实际编译、`docker/Dockerfile`、`scripts/setup_jetson_native.sh` 的实跑。x86_64 的 Humble 容器里已经编过（见"验证记录"）。
 - 一切需要真机的东西：外参标定、雷达 IP、UART 设备名、PTP 授时。
 
 ## 待 Ryan 确认
@@ -146,7 +146,15 @@ bash scripts/sim_e2e_test.sh 46 lidar_clock:=boot                        # 模�
 
 ## 验证记录
 
-### 2026-11-11，Claude，云端 Linux x86_64（Ubuntu 24.04 + ROS 2 **Jazzy**，不是 Jetson，也不是 Humble）
+### 2026-11-11，GitHub Actions，`ros:humble-ros-base` 容器（x86_64，**ROS 2 Humble**，不是 Jetson）
+
+每次推送都会重跑（`.github/workflows/ci.yml`）。首次运行的结果：
+
+- `colcon build`：Livox-SDK2、`livox_ros_driver2`、`fast_lio`、`px4_msgs`（release/1.16）和 4 个 `hummingbird_*` 包全部编译通过（7 分 50 秒）。
+- `colcon test`：181 个测试通过，其中 9 个是进程内 ROS 节点测试。
+- `scripts/sim_e2e_test.sh`：通过。FAST-LIO 位姿对真值 RMSE 1.7 cm、最大 2.7 cm、偏航 RMSE 0.03°；桥接 462 帧无重置；地图 35.5 万点，99% 离真实表面 ≤ 5.3 cm。
+
+### 2026-11-11，Claude，云端 Linux x86_64（Ubuntu 24.04 + ROS 2 **Jazzy**，不是 Jetson）
 
 已做：
 
@@ -162,7 +170,7 @@ bash scripts/sim_e2e_test.sh 46 lidar_clock:=boot                        # 模�
 
 没做：
 
-- 没有在 ROS 2 Humble 上重新编译（上面全部是 Jazzy）。代码没有用 Jazzy 独有的接口，但 Humble 上的首次编译仍需在 Jetson 或 Humble 容器里确认。
+- 没有在 Jetson（aarch64、JetPack 6.2）上编译。Humble 上的编译和测试由上面的 GitHub Actions 完成，是 x86_64。
 - 没有编译 Micro-XRCE-DDS-Agent，没有连接 PX4 SITL：**PX4 是否真正融合 EV 仍未验证。**
 - `docker/Dockerfile` 和 `scripts/setup_jetson_native.sh` 没有实际跑过。
 - 没有连接真实 Mid-360、Pixhawk 6C。
