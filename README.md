@@ -130,3 +130,6 @@ ros2 launch hummingbird_task_agent mission_gate.launch.py
 | [apirrone/Open_Duck_Mini_Runtime](https://github.com/apirrone/Open_Duck_Mini_Runtime)、[apirrone/Open_Duck_Playground](https://github.com/apirrone/Open_Duck_Playground) | 上游根目录未见 LICENSE / `pyproject.toml` 也未声明许可证；fork 仅作存档，不改许可、不把它们当成 MIT |
 
 若后续把 GPL-2.0 的 FAST-LIO2 链进同一发行物，发行许可需要按 GPL 义务另行评估，不能只看本仓库的 MIT。
+
+## 白皮书
+见 [docs/whitepaper.md](docs/whitepaper.md)。
