@@ -42,7 +42,28 @@ Ryan 原有的 3D Mapping Drone 工程代码已全部丢失（他曾在一夜间
 
    仓库预留了 [`src/`](src/) 作为「Ryan 重建代码放置处」。可以把 PX4 配置、ROS 2 工作空间摘录、标定文件、启动脚本等放到该目录（或在其中按包拆分），并在 [`src/README.md`](src/README.md) 里说明目录结构。不要覆盖 `ros2_ws/src/hummingbird_*` 这套新建的接口骨架，除非是有意合并。
 
-目前仓库里还没有 `ryan-rebuild` 分支（将在首次推送时创建）。`main` 上的文档和 `hummingbird_*` 包可以并存，不必互相覆盖。
+`ryan-rebuild` 分支已创建，并已放入助手重建的工作空间（见下节）。`main` 上的文档和 `hummingbird_*` 包可以并存，不必互相覆盖。
+
+## Ryan 重建
+
+> **这是助手根据硬件规格（Pixhawk 6C / PX4 v1.15、Jetson、Livox Mid-360、ROS 2 Humble、FAST-LIO2）从零重建的版本，不是 Ryan 的原代码，等待 Ryan 审核。** 没有上过真机，也没有在 Jetson 上编译过。
+
+详细说明见 [docs/ryan-rebuild.md](docs/ryan-rebuild.md)，PX4 参数见 [docs/px4-params.md](docs/px4-params.md)。
+
+| 内容 | 路径 |
+| --- | --- |
+| vcstool 清单（钉住 lucascygu 下的 FAST_LIO_ROS2 / livox_ros_driver2 / px4_msgs / px4_ros_com 提交） | [`ros2_ws/hummingbird.repos`](ros2_ws/hummingbird.repos) |
+| 启动文件、Mid-360 网络配置、FAST-LIO2 配置、静态 TF、RViz、存图/导出工具 | [`ros2_ws/src/hummingbird_bringup`](ros2_ws/src/hummingbird_bringup) |
+| FAST-LIO `/Odometry`（ENU/FLU）→ PX4 `VehicleOdometry`（NED/FRD）桥接，**只喂估计器、不解锁** | [`ros2_ws/src/hummingbird_px4_bridge`](ros2_ws/src/hummingbird_px4_bridge) |
+| Docker（ros:humble + Livox-SDK2 + XRCE Agent v2.4.2）与 Jetson 原生安装脚本 | [`docker/Dockerfile`](docker/Dockerfile)、[`scripts/setup_jetson_native.sh`](scripts/setup_jetson_native.sh) |
+| 纯 Python 单元测试 | [`scripts/run_tests.sh`](scripts/run_tests.sh) |
+
+```bash
+cd ros2_ws && vcs import --recursive src < hummingbird.repos
+ros2 launch hummingbird_bringup mapping.launch.py start_xrce_agent:=true xrce_dev:=/dev/ttyTHS1
+```
+
+Ryan 如果有自己一晚上搓出来的版本，欢迎直接推到这个分支或开 PR 覆盖/合并，以他实测过的参数为准。
 
 ## 硬件 BOM（设计草案）
 
@@ -86,6 +107,8 @@ Ryan 原有的 3D Mapping Drone 工程代码已全部丢失（他曾在一夜间
 ros2_ws/src/
   hummingbird_interfaces/     # GroundTask、MapTile、HighLevelSetpoint、RequestMission
   hummingbird_task_agent/     # mission_gate 节点：只发布高层 setpoint 请求
+  hummingbird_bringup/        # （ryan-rebuild）Mid-360 + FAST-LIO2 + 桥接 + 存图的启动与配置
+  hummingbird_px4_bridge/     # （ryan-rebuild）FAST-LIO 里程计 → PX4 外部视觉输入
 src/                          # 预留给 Ryan 放入重建代码
 ```
 

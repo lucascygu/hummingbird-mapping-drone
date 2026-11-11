@@ -1,0 +1,28 @@
+# vcstool manifest for the Hummingbird ROS 2 workspace.
+#   cd ros2_ws && vcs import --recursive src < hummingbird.repos
+# --recursive is required: FAST_LIO_ROS2 pulls ikd-Tree as a git submodule.
+# Forks live under github.com/lucascygu; versions are pinned to the commits verified on
+# 2026-11-11. Bump deliberately, and keep px4_msgs on the SAME release branch as the PX4
+# firmware flashed on the Pixhawk 6C (message definitions must match).
+repositories:
+  fast_lio:
+    type: git
+    url: https://github.com/lucascygu/FAST_LIO_ROS2.git
+    version: 2fffc570a25d0df172720bac034fbdb6a13d2162   # branch ros2 (Ericsii/FAST_LIO_ROS2)
+  livox_ros_driver2:
+    type: git
+    url: https://github.com/lucascygu/livox_ros_driver2.git
+    version: 21445540f0d100dc86a7e6df312dd70bbdb4afdf   # branch master
+  px4_msgs:
+    type: git
+    url: https://github.com/lucascygu/px4_msgs.git
+    version: a1045ec4feb6d709bdecaf3895f1d5b43a5dabb8   # branch release/1.15 (match PX4 v1.15.x firmware)
+  px4_ros_com:
+    type: git
+    url: https://github.com/lucascygu/px4_ros_com.git
+    version: 86e9aeb20e55a4673fa8a9f1c29ea06a6c5ad1af   # branch release/1.15 (examples only, optional)
+# Not a ROS package (plain CMake), built separately by docker/Dockerfile and
+# scripts/setup_jetson_native.sh into /usr/local:
+#   https://github.com/lucascygu/Livox-SDK2.git @ c0796f04c143143899c87a773d9f6b7136453c0b (master)
+# Upstream (not forked), built standalone by the same scripts; PX4 docs pin the v2.x agent:
+#   https://github.com/eProsima/Micro-XRCE-DDS-Agent.git @ v2.4.2

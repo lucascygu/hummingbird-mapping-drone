@@ -1,0 +1,55 @@
+# FAST-LIO2 (Ericsii/FAST_LIO_ROS2, fork lucascygu/FAST_LIO_ROS2 @ 2fffc57) config for Livox Mid-360.
+# Base values copied from the fork's config/mid360.yaml; changes are marked "HB:".
+/**:
+    ros__parameters:
+        feature_extract_enable: false
+        point_filter_num: 3
+        max_iteration: 3
+        filter_size_surf: 0.5
+        filter_size_map: 0.5
+        cube_side_length: 1000.0
+        runtime_pos_log_enable: false
+        # HB: overridden by the launch file (map_dir argument). Target of the /map_save service.
+        map_file_path: "/tmp/hummingbird_fastlio_map.pcd"
+
+        common:
+            lid_topic:  "/livox/lidar"   # livox_ros_driver2 with xfer_format=1 (CustomMsg)
+            imu_topic:  "/livox/imu"     # Mid-360 built-in IMU
+            time_sync_en: false
+            time_offset_lidar_to_imu: 0.0
+
+        preprocess:
+            lidar_type: 1                # 1 = Livox (CustomMsg)
+            scan_line:  4
+            blind: 0.5                   # m; HB: raise to ~0.8 if props/frame arms appear in the cloud
+            timestamp_unit: 3
+            scan_rate: 10
+
+        mapping:
+            acc_cov: 0.1
+            gyr_cov: 0.1
+            b_acc_cov: 0.0001
+            b_gyr_cov: 0.0001
+            fov_degree:    360.0
+            det_range:     100.0
+            extrinsic_est_en:  false     # HB: upstream true; built-in IMU is rigidly fixed, keep the known extrinsic
+            # LiDAR origin expressed in the Mid-360 IMU frame (upstream mid360.yaml value).
+            extrinsic_T: [ -0.011, -0.02329, 0.04412 ]
+            extrinsic_R: [ 1., 0., 0.,
+                           0., 1., 0.,
+                           0., 0., 1.]
+
+        publish:
+            path_en: true
+            effect_map_en: false
+            # HB: /map_save only has data when map_en is true (it saves the accumulated /Laser_map
+            # buffer, which grows without bound and is re-published at 1 Hz). Keep false on the
+            # Jetson and use hummingbird_bringup/map_recorder instead; set true for short runs.
+            map_en: false
+            scan_publish_en:  true
+            dense_publish_en: false
+            scan_bodyframe_pub_en: true
+
+        pcd_save:
+            pcd_save_en: true            # gates the /map_save service in this port
+            interval: -1

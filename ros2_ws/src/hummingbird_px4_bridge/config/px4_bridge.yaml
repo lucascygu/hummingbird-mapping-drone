@@ -1,0 +1,22 @@
+# Parameters for hummingbird_px4_bridge/odom_bridge. Values marked PLACEHOLDER must be
+# measured on the real airframe before any flight.
+hummingbird_px4_odom_bridge:
+  ros__parameters:
+    input_topic: /Odometry                        # FAST_LIO_ROS2 (frame camera_init -> body)
+    output_topic: /fmu/in/vehicle_visual_odometry # PX4 dds_topics.yaml (release/1.15)
+    output_frame: frd        # FAST-LIO world has arbitrary heading -> POSE_FRAME_FRD
+    # body (Mid-360 built-in IMU) -> base_link (FLU, at the vehicle CoG). PLACEHOLDER.
+    # Example: Mid-360 mounted upside-down under the frame -> imu_to_base_rpy: [3.14159, 0.0, 0.0]
+    imu_to_base_xyz: [0.0, 0.0, 0.0]
+    imu_to_base_rpy: [0.0, 0.0, 0.0]
+    reexpress_world_in_vehicle_frame: true
+    covariance_source: fixed # fixed | fastlio | ros   (see README: FAST-LIO cov is reordered + 1 cycle late)
+    fixed_position_variance: 0.01      # m^2
+    fixed_orientation_variance: 0.0025 # rad^2
+    estimate_velocity: false           # keep EKF2_EV_CTRL bit 2 off unless enabled
+    stamp_mode: auto                   # auto | header | receipt
+    max_header_skew_s: 0.5
+    receipt_latency_ms: 0.0
+    max_rate_hz: 50.0
+    reset_jump_m: 1.0
+    quality: 0
