@@ -1,0 +1,58 @@
+# Generated / assisted by Grok
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Enabled: true
+      Cell Size: 1
+      Plane Cell Count: 50
+      Reference Frame: <Fixed Frame>
+    - Class: rviz_default_plugins/TF
+      Name: TF
+      Enabled: true
+      Marker Scale: 0.5
+    - Class: rviz_default_plugins/PointCloud2
+      Name: cloud_registered
+      Enabled: true
+      Topic:
+        Value: /cloud_registered
+        Reliability Policy: Best Effort
+      Style: Points
+      Size (Pixels): 2
+      Color Transformer: Intensity
+      Decay Time: 30
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Laser_map
+      Enabled: false
+      Topic:
+        Value: /Laser_map
+      Style: Points
+      Size (Pixels): 1
+      Color Transformer: AxisColor
+    - Class: rviz_default_plugins/Odometry
+      Name: Odometry
+      Enabled: true
+      Topic:
+        Value: /Odometry
+      Keep: 50
+    - Class: rviz_default_plugins/Path
+      Name: path
+      Enabled: true
+      Topic:
+        Value: /path
+  Global Options:
+    Fixed Frame: camera_init
+    Frame Rate: 30
+  Tools:
+    - Class: rviz_default_plugins/MoveCamera
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 40
+      Pitch: 0.8
+      Yaw: 0.8
+      Target Frame: body

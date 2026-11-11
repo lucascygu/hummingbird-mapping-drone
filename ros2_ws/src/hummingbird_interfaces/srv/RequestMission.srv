@@ -1,19 +1,26 @@
 # Generated / assisted by Grok
+# Extended by Claude: max_speed_mps, geofence semantics
 # Submit a high-level mission for validation by mission_gate.
 # arm_approval and takeoff_approval must be explicit; the default is false.
+# rtl and land need no approval, frame or waypoints and are never refused.
 
 string mission_id
 string mission_type    # explore | map_region | inspect | loiter | rtl | land
 string description
 string frame_id
+# Identity (or all-zero) orientation = heading unspecified.
 geometry_msgs/Pose[] waypoints
 
 bool arm_approval
 bool takeoff_approval
 
-# If 0, the gate uses its configured default geofence, not "unlimited".
+# If 0, the gate uses its configured site geofence, not "unlimited".
+# A positive value can only tighten the site geofence, never widen it.
 float64 geofence_max_altitude_m
 float64 geofence_radius_m
+
+# Optional speed cap in m/s. 0 = unspecified. Must not exceed the gate's site speed limit.
+float64 max_speed_mps
 ---
 bool accepted
 string reason

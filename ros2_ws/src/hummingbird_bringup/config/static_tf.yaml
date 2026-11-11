@@ -1,0 +1,7 @@
+# Generated / assisted by Grok
+# Static transforms published by launch/static_tf.launch.py. ALL VALUES ARE PLACEHOLDERS
+# except body->livox_frame, which is the Mid-360 IMU->LiDAR offset from FAST_LIO_ROS2's mid360.yaml.
+# Keep body->base_link consistent with hummingbird_px4_bridge imu_to_base_xyz / imu_to_base_rpy.
+map_to_camera_init:   {xyz: [0.0, 0.0, 0.0], rpy: [0.0, 0.0, 0.0]}
+body_to_base_link:    {xyz: [0.0, 0.0, 0.0], rpy: [0.0, 0.0, 0.0]}
+body_to_livox_frame:  {xyz: [-0.011, -0.02329, 0.04412], rpy: [0.0, 0.0, 0.0]}

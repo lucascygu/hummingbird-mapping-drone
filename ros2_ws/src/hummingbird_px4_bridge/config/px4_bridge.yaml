@@ -1,0 +1,33 @@
+# Generated / assisted by Grok
+# Reviewed by Claude: PX4 v1.16.1 (the firmware on the team's Pixhawk 6C), discontinuity handling
+# Parameters for hummingbird_px4_bridge/odom_bridge. Values marked PLACEHOLDER must be
+# measured on the real airframe before any flight.
+hummingbird_px4_odom_bridge:
+  ros__parameters:
+    input_topic: /Odometry                        # FAST_LIO_ROS2 (frame camera_init -> body)
+    # PX4 v1.16.1 src/modules/uxrce_dds_client/dds_topics.yaml. VehicleOdometry has
+    # MESSAGE_VERSION 0, so this topic carries no "_vN" suffix (unlike e.g. vehicle_status_v1).
+    output_topic: /fmu/in/vehicle_visual_odometry
+    output_frame: frd        # FAST-LIO world has arbitrary heading -> POSE_FRAME_FRD
+    # body (Mid-360 built-in IMU) -> base_link (FLU, at the vehicle CoG). PLACEHOLDER.
+    # Example: Mid-360 mounted upside-down under the frame -> imu_to_base_rpy: [3.14159, 0.0, 0.0]
+    imu_to_base_xyz: [0.0, 0.0, 0.0]
+    imu_to_base_rpy: [0.0, 0.0, 0.0]
+    reexpress_world_in_vehicle_frame: true
+    covariance_source: fixed # fixed | fastlio | ros   (see README: FAST-LIO cov is reordered + 1 cycle late)
+    fixed_position_variance: 0.01      # m^2
+    fixed_orientation_variance: 0.0025 # rad^2
+    estimate_velocity: false           # keep EKF2_EV_CTRL bit 2 off unless enabled
+    stamp_mode: auto                   # auto | header | receipt (auto is sticky: it does not flip per sample)
+    max_header_skew_s: 0.5
+    receipt_latency_ms: 0.0
+    max_rate_hz: 50.0
+    # Discontinuity handling. PX4 jumps to the external-vision pose whenever reset_counter
+    # changes, so an implausible step is never forwarded: the bridge goes silent for holdoff_s
+    # (longer than EKF2's 0.4 s vision timeout) and then resumes as a new session.
+    reset_jump_m: 1.0                  # a step must be longer than this ...
+    max_plausible_speed_mps: 30.0      # ... and faster than this to count as a discontinuity
+    holdoff_s: 1.0
+    gap_reset_s: 1.0                   # no odometry for this long -> resume as a new session
+    stale_after_s: 1.0                 # health report turns "stale" after this long without input
+    quality: 0

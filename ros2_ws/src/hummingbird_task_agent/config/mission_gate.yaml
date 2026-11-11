@@ -1,0 +1,16 @@
+# Generated / assisted by Claude
+# Site limits for hummingbird_task_agent/mission_gate. ALL NUMBERS ARE DEVELOPMENT PLACEHOLDERS:
+# replace them with the surveyed limits of the actual test site before any flight.
+# A mission request may tighten these limits but can never widen them.
+hummingbird_mission_gate:
+  ros__parameters:
+    # Frames a mission may be expressed in. The geofence is evaluated in the request's frame as
+    # given, so every frame listed here must share the same origin and axes as `home_xyz`.
+    allowed_frames: ["hummingbird_map", "map", "odom"]
+    geofence_max_altitude_m: 30.0     # m above home_xyz[2]            PLACEHOLDER
+    geofence_radius_m: 100.0          # m, horizontal, around home_xyz PLACEHOLDER
+    home_xyz: [0.0, 0.0, 0.0]         # geofence centre in the mission frame
+    max_waypoints: 200
+    max_speed_limit_mps: 5.0          # a request asking for more is refused, not clamped
+    draft_ttl_s: 120.0                # a parked GroundTask expires if nobody approves it in time
+    max_drafts: 16
