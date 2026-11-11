@@ -1,3 +1,4 @@
+# Generated / assisted by Grok
 """Pure mission-gate logic. No ROS import, so it can be compiled or unit-tested alone.
 
 The gate never emits actuator or arm commands. It only decides whether a

@@ -1,3 +1,4 @@
+# Generated / assisted by Grok
 cmake_minimum_required(VERSION 3.8)
 project(hummingbird_interfaces)
 

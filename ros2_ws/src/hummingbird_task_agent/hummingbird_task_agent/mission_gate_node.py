@@ -1,3 +1,4 @@
+# Generated / assisted by Grok
 """ROS 2 node wrapper around the pure mission gate.
 
 Publishes only HighLevelSetpoint messages. It does not call PX4 arm/takeoff

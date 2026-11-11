@@ -1,3 +1,4 @@
+# Generated / assisted by Grok
 # The only motion request the task layer may publish after gating.
 # Consumers (navigation / PX4 bridge) must still apply their own limits.
 # Do not treat this as an arm, takeoff, or actuator command.

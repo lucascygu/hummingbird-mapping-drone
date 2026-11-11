@@ -1,5 +1,7 @@
 # 蜂鸟 Hummingbird Mapping Drone
 
+> 本项目文档与设计由 Grok 协助整理 （Documentation and design assisted by Grok）
+
 面向 **具身智能空中节点**（embodied-intelligence aerial node）的三维建图无人机项目，命名取自「蜂鸟 / Hummingbird」，也与「猫大虫」相关设想一脉相承。
 
 目标硬件与软件栈：
@@ -156,3 +158,9 @@ ros2 launch hummingbird_task_agent mission_gate.launch.py
 
 ## 白皮书
 见 [docs/whitepaper.md](docs/whitepaper.md)。
+
+## 署名 / Credits
+
+- Lucas：发起人
+- Ryan：飞行平台与建图
+- Grok：文档、设计与代码协助

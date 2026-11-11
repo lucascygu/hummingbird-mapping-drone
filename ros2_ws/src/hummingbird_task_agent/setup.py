@@ -1,3 +1,4 @@
+# Generated / assisted by Grok
 from setuptools import find_packages, setup
 
 package_name = "hummingbird_task_agent"

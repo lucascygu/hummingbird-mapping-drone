@@ -1,3 +1,4 @@
+# Generated / assisted by Grok
 # A compact map fragment shared from air to ground.
 # data interpretation depends on data_kind; keep tiles small.
 
