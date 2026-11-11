@@ -12,6 +12,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 
 
 def generate_launch_description():
@@ -30,7 +31,8 @@ def generate_launch_description():
                 "xfer_format": 1,        # 1 = livox_ros_driver2/CustomMsg (FAST-LIO lidar_type 1)
                 "multi_topic": 0,
                 "data_src": 0,
-                "publish_freq": LaunchConfiguration("publish_freq"),
+                # The driver declares a double: "publish_freq:=10" must not arrive as an integer.
+                "publish_freq": ParameterValue(LaunchConfiguration("publish_freq"), value_type=float),
                 "output_data_type": 0,
                 "frame_id": "livox_frame",
                 "user_config_path": LaunchConfiguration("livox_config"),

@@ -8,6 +8,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 
 
 def generate_launch_description():
@@ -26,7 +27,7 @@ def generate_launch_description():
             parameters=[
                 LaunchConfiguration("fast_lio_config"),
                 {
-                    "use_sim_time": LaunchConfiguration("use_sim_time"),
+                    "use_sim_time": ParameterValue(LaunchConfiguration("use_sim_time"), value_type=bool),
                     "map_file_path": PathJoinSubstitution(
                         [LaunchConfiguration("map_dir"), "fastlio_map.pcd"]),
                 },
