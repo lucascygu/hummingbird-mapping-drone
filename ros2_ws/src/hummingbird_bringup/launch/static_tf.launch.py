@@ -1,3 +1,4 @@
+# Generated / assisted by Grok
 """Static TFs: map -> camera_init (FAST-LIO world), body -> base_link, body -> livox_frame.
 
 FAST-LIO itself broadcasts camera_init -> body (the Mid-360 IMU) at the LiDAR rate.

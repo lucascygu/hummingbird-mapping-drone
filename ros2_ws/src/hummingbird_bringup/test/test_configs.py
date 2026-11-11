@@ -1,3 +1,4 @@
+# Generated / assisted by Grok
 """Config sanity checks (no ROS needed)."""
 
 import ipaddress

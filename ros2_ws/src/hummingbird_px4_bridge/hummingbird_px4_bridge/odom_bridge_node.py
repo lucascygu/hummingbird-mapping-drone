@@ -1,3 +1,4 @@
+# Generated / assisted by Grok
 """ROS 2 node: FAST-LIO2 /Odometry  ->  PX4 /fmu/in/vehicle_visual_odometry.
 
 Safety scope (by design, enforced by tests/test_no_command_paths.py):

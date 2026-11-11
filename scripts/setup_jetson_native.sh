@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Generated / assisted by Grok
 # Native (non-docker) setup for a Jetson running Ubuntu 22.04 + ROS 2 Humble.
 # ASSUMPTIONS (unverified): JetPack 6.x (Ubuntu 22.04, aarch64), ROS 2 Humble already installed
 # from packages.ros.org, user in the dialout group for the TELEM2 UART.

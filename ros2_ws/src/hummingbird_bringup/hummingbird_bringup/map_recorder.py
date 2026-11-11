@@ -1,3 +1,4 @@
+# Generated / assisted by Grok
 """ROS 2 node: accumulate FAST-LIO /cloud_registered into a voxel map and save it as PCD.
 
 Why not only FAST-LIO's own /map_save? In FAST_LIO_ROS2 (ros2 @ 2fffc57) /map_save writes

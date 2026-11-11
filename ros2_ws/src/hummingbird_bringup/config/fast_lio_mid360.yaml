@@ -1,3 +1,4 @@
+# Generated / assisted by Grok
 # FAST-LIO2 (Ericsii/FAST_LIO_ROS2, fork lucascygu/FAST_LIO_ROS2 @ 2fffc57) config for Livox Mid-360.
 # Base values copied from the fork's config/mid360.yaml; changes are marked "HB:".
 /**:

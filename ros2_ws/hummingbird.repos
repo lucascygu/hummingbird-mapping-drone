@@ -1,3 +1,4 @@
+# Generated / assisted by Grok
 # vcstool manifest for the Hummingbird ROS 2 workspace.
 #   cd ros2_ws && vcs import --recursive src < hummingbird.repos
 # --recursive is required: FAST_LIO_ROS2 pulls ikd-Tree as a git submodule.

@@ -1,3 +1,4 @@
+# Generated / assisted by Grok
 """Pure-python frame conversion helpers (no ROS, no numpy) so they can be unit-tested anywhere.
 
 Conventions

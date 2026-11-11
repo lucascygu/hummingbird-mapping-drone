@@ -1,3 +1,4 @@
+# Generated / assisted by Grok
 """Static guard: the bridge must never gain arming / offboard / actuator code paths."""
 
 import pathlib

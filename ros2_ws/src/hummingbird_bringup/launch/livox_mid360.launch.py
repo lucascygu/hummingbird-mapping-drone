@@ -1,3 +1,4 @@
+# Generated / assisted by Grok
 """Livox Mid-360 driver (livox_ros_driver2) with Hummingbird's network config.
 
 Mirrors livox_ros_driver2/launch_ROS2/msg_MID360_launch.py (xfer_format=1 = livox CustomMsg,

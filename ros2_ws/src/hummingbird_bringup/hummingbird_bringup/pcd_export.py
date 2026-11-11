@@ -1,3 +1,4 @@
+# Generated / assisted by Grok
 """CLI: downsample / crop / convert a FAST-LIO PCD map.
 
   ros2 run hummingbird_bringup pcd_export in.pcd out.pcd --voxel 0.1

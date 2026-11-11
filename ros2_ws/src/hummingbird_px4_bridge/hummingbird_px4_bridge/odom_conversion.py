@@ -1,3 +1,4 @@
+# Generated / assisted by Grok
 """ROS-free core of the bridge: turn one FAST-LIO odometry sample into VehicleOdometry fields.
 
 Kept separate from the ROS node so that pytest can exercise it without rclpy / px4_msgs.

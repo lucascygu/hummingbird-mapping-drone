@@ -1,3 +1,4 @@
+# Generated / assisted by Grok
 import math
 
 import pytest

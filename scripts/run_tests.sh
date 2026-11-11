@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Generated / assisted by Grok
 # Pure-python unit tests (no ROS runtime needed; numpy + pyyaml + pytest required).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

@@ -1,3 +1,4 @@
+# Generated / assisted by Grok
 """FAST-LIO2 mapping node with Hummingbird's Mid-360 config (no RViz; see mapping.launch.py)."""
 
 import os

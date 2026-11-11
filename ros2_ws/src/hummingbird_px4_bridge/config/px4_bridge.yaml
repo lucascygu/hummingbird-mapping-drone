@@ -1,3 +1,4 @@
+# Generated / assisted by Grok
 # Parameters for hummingbird_px4_bridge/odom_bridge. Values marked PLACEHOLDER must be
 # measured on the real airframe before any flight.
 hummingbird_px4_odom_bridge:

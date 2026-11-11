@@ -1,3 +1,4 @@
+# Generated / assisted by Grok
 # Hummingbird mapping workspace image (ROS 2 Humble).
 #
 #   docker build -f docker/Dockerfile -t hummingbird:humble .            # x86_64 dev box

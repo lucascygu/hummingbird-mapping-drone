@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Generated / assisted by Grok
 # Save the current map. Run in a sourced ROS 2 shell while mapping.launch.py is running.
 #   scripts/save_map.sh            -> map_recorder voxel map (always available)
 #   scripts/save_map.sh fastlio    -> FAST-LIO /map_save (needs publish.map_en: true)

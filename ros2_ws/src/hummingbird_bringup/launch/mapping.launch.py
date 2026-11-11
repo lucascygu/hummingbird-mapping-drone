@@ -1,3 +1,4 @@
+# Generated / assisted by Grok
 """Full Hummingbird mapping stack on the Jetson.
 
   Livox Mid-360 -> livox_ros_driver2 (/livox/lidar CustomMsg, /livox/imu)

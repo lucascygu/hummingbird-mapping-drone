@@ -1,3 +1,4 @@
+# Generated / assisted by Grok
 from hummingbird_task_agent.mission_gate import MissionRequest, Waypoint, evaluate_mission
 
 

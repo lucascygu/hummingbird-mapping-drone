@@ -1,3 +1,4 @@
+# Generated / assisted by Grok
 """Minimal PCD reader/writer + voxel downsampling (numpy only, no PCL/Open3D).
 
 Supports DATA ascii and DATA binary (what FAST-LIO / pcl::PCDWriter::writeBinary produce).

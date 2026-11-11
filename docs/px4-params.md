@@ -1,5 +1,7 @@
 # PX4 参数：FAST-LIO2 外部视觉（EV）融合 + TELEM2 uXRCE-DDS
 
+本文档由 Grok 撰写/协助
+
 > 适用：Pixhawk 6C + PX4 **v1.15.x**（参数名逐条对照 fork [lucascygu/PX4-Autopilot](https://github.com/lucascygu/PX4-Autopilot) 的 `release/1.15` 分支源码核对，见每行"出处"）。
 > 其它版本（v1.14 / v1.16+）参数可能有增删，**刷固件后请在 QGC 里逐个确认**。
 > 本文件只涉及估计器输入和通信，**不包含任何解锁、起飞或 offboard 设置**。

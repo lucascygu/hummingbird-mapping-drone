@@ -1,3 +1,4 @@
+# Generated / assisted by Grok
 Panels:
   - Class: rviz_common/Displays
     Name: Displays
