@@ -5,6 +5,11 @@
 # Forks live under github.com/lucascygu; versions are pinned to the commits verified on
 # 2026-11-11. Bump deliberately, and keep px4_msgs on the SAME release branch as the PX4
 # firmware flashed on the Pixhawk 6C (message definitions must match).
+#
+# Reviewed by Claude: the team's March 2026 report records PX4 Autopilot v1.16.1 on the
+# Pixhawk 6C, so px4_msgs is pinned to release/1.16 (it was release/1.15). VehicleOdometry has
+# the same fields in both, but 71 other messages differ and 1.16 renames versioned topics
+# (e.g. /fmu/out/vehicle_status_v1), so a 1.15 px4_msgs cannot read a 1.16 flight controller.
 repositories:
   fast_lio:
     type: git
@@ -17,11 +22,14 @@ repositories:
   px4_msgs:
     type: git
     url: https://github.com/lucascygu/px4_msgs.git
-    version: a1045ec4feb6d709bdecaf3895f1d5b43a5dabb8   # branch release/1.15 (match PX4 v1.15.x firmware)
-  px4_ros_com:
-    type: git
-    url: https://github.com/lucascygu/px4_ros_com.git
-    version: 86e9aeb20e55a4673fa8a9f1c29ea06a6c5ad1af   # branch release/1.15 (examples only, optional)
+    version: 392e831c1f659429ca83902e66820d7094591410   # branch release/1.16 (match PX4 v1.16.x firmware)
+# px4_ros_com is deliberately NOT imported any more (removed by Claude, 2026-11-11).
+# Nothing in this workspace uses it, and it installs the example executables
+# offboard_control, offboard_control_srv and offboard_control.py, which ARM the vehicle and fly
+# it to 5 m as soon as they are run. On the drone's own computer that is one mistyped
+# `ros2 run` away from an unattended take-off, and it contradicts the rule that no code in this
+# workspace can arm. If you need its frame_transforms library, import it by hand on a bench
+# machine:  https://github.com/lucascygu/px4_ros_com.git @ 86e9aeb20e55a4673fa8a9f1c29ea06a6c5ad1af
 # Not a ROS package (plain CMake), built separately by docker/Dockerfile and
 # scripts/setup_jetson_native.sh into /usr/local:
 #   https://github.com/lucascygu/Livox-SDK2.git @ c0796f04c143143899c87a773d9f6b7136453c0b (master)

@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Generated / assisted by Grok
+# Reviewed by Claude: rosdep initialisation; NOT run on a Jetson by either assistant.
 # Native (non-docker) setup for a Jetson running Ubuntu 22.04 + ROS 2 Humble.
-# ASSUMPTIONS (unverified): JetPack 6.x (Ubuntu 22.04, aarch64), ROS 2 Humble already installed
-# from packages.ros.org, user in the dialout group for the TELEM2 UART.
+# The team's report records a Jetson Orin Nano Super 8GB on JetPack 6.2 (Ubuntu 22.04, aarch64)
+# with ROS 2 Humble. ASSUMED: Humble installed from packages.ros.org, user in the dialout group
+# for the TELEM2 UART.
 #
 #   bash scripts/setup_jetson_native.sh            # installs deps, Livox-SDK2, XRCE agent, builds ws
 #   SKIP_SYSTEM=1 bash scripts/setup_jetson_native.sh   # only (re)build the workspace
@@ -34,7 +36,11 @@ cp src/livox_ros_driver2/package_ROS2.xml src/livox_ros_driver2/package.xml
 rm -rf src/livox_ros_driver2/launch && cp -r src/livox_ros_driver2/launch_ROS2 src/livox_ros_driver2/launch
 
 set +u; source /opt/ros/humble/setup.bash; set -u
-rosdep install --from-paths src --ignore-src -r -y --rosdistro humble --skip-keys "livox_ros_driver2 fast_lio" || true
+# rosdep needs its source list once per machine; without it the install below fails silently.
+[[ -f /etc/ros/rosdep/sources.list.d/20-default.list ]] || sudo rosdep init
+rosdep update --rosdistro humble
+rosdep install --from-paths src --ignore-src -r -y --rosdistro humble --skip-keys "livox_ros_driver2 fast_lio" \
+  || echo "WARNING: rosdep could not install every dependency; the build below may fail" >&2
 # Orin NX/Nano: 2 workers avoids OOM while compiling FAST-LIO / px4_msgs.
 colcon build --symlink-install --parallel-workers 2 \
   --cmake-args -DCMAKE_BUILD_TYPE=Release -DROS_EDITION=ROS2 -DDISTRO_ROS=humble
@@ -42,6 +48,7 @@ colcon build --symlink-install --parallel-workers 2 \
 cat <<MSG
 Done. Next:
   source ${WS}/install/setup.bash
+  bash ${REPO_DIR}/scripts/sim_e2e_test.sh     # no hardware needed: checks the whole mapping chain
   # Jetson NIC for the Mid-360 must be 192.168.1.50/24 (or edit config/MID360_config.json)
   ros2 launch hummingbird_bringup mapping.launch.py start_xrce_agent:=true xrce_dev:=/dev/ttyTHS1
 MSG
