@@ -103,7 +103,7 @@ ros2 launch hummingbird_task_agent mission_gate.launch.py
 
 ## 相关项目：英伟达小鸭子 / Open Duck Mini
 
-用户提到的「英伟达小鸭子」，对应的是 Disney **BDX** 风格开源迷你鸭机器人，以及由 NVIDIA 等发起的 **Newton** 物理引擎（常在 GTC 一类场合与仿真 / 具身项目一起出现）。这些仓库**不是**本无人机飞控栈的一部分，只作为相关具身智能项目 fork 到同一账号下便于查阅。本仓库也没有导入它们的源码。
+用户提到的「英伟达小鸭子」，对应的是 Disney **BDX** 风格开源迷你鸭机器人，以及由 NVIDIA 等发起的 **Newton** 物理引擎（常在 GTC 一类场合与仿真 / 具身项目一起出现）。Open Duck Mini 拟作为 Oprace 空地协同研究的首个双足地面验证平台，蜂鸟承担空中感知与观察任务。当前仍是研究方案，尚未导入小鸭子源码或实现联合运行；Newton 保留为后续仿真候选。具体范围、缺失接口和实验计划见 [Oprace 白皮书 v0.2](docs/whitepaper.md)。
 
 | 项目 | 作用 | 本账号 fork | 上游 |
 | --- | --- | --- | --- |
@@ -132,4 +132,7 @@ ros2 launch hummingbird_task_agent mission_gate.launch.py
 若后续把 GPL-2.0 的 FAST-LIO2 链进同一发行物，发行许可需要按 GPL 义务另行评估，不能只看本仓库的 MIT。
 
 ## 白皮书
-见 [docs/whitepaper.md](docs/whitepaper.md)。
+
+[Oprace 白皮书 v0.2：面向移动智能体的空地协同感知与行动](docs/whitepaper.md)以蜂鸟无人机与 Open Duck Mini 为首个验证方案，说明当前代码状态、坐标与地图接口、地面运动适配、比较实验和阶段验收。
+
+v0.2 是文档版本，不代表软件已完成对应实现。蜂鸟继续作为空中节点项目；Oprace 表示跨平台的协同研究方向。
