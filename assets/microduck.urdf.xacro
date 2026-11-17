@@ -1,0 +1,496 @@
+<?xml version="1.0"?>
+<robot name="microduck" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ==================== 模式开关与全局参数 ==================== -->
+  <!-- walk_mode: "planar" (默认，锁定关节用cmd_vel平滑移动，适合地空协同联调) 
+                  "legged" (解锁全部关节，启用gazebo_ros_control位置/力矩控制器) -->
+  <xacro:arg name="walk_mode" default="planar"/>
+  <xacro:property name="mode" value="$(arg walk_mode)"/>
+  <xacro:property name="M_PI" value="3.1415926535897931"/>
+
+  <!-- 常用惯性矩阵计算宏 (避免Gazebo物理引擎因零惯量崩溃) -->
+  <xacro:macro name="box_inertia" params="m x y z xyz:='0 0 0' rpy:='0 0 0'">
+    <inertial>
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+      <mass value="${m}"/>
+      <inertia ixx="${m*(y*y+z*z)/12.0}" ixy="0" ixz="0"
+               iyy="${m*(x*x+z*z)/12.0}" iyz="0"
+               izz="${m*(x*x+y*y)/12.0}"/>
+    </inertial>
+  </xacro:macro>
+
+  <xacro:macro name="cyl_inertia" params="m r h xyz:='0 0 0' rpy:='0 0 0'">
+    <inertial>
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+      <mass value="${m}"/>
+      <inertia ixx="${m*(3*r*r+h*h)/12.0}" ixy="0" ixz="0"
+               iyy="${m*(3*r*r+h*h)/12.0}" iyz="0"
+               izz="${m*r*r/2.0}"/>
+    </inertial>
+  </xacro:macro>
+
+  <!-- RViz 材质定义 -->
+  <material name="duck_yellow"><color rgba="0.96 0.76 0.12 1.0"/></material>
+  <material name="duck_orange"><color rgba="0.95 0.42 0.08 1.0"/></material>
+  <material name="servo_dark"><color rgba="0.18 0.18 0.20 1.0"/></material>
+  <material name="metal_silver"><color rgba="0.75 0.78 0.82 1.0"/></material>
+  <material name="lens_black"><color rgba="0.05 0.05 0.05 1.0"/></material>
+  <material name="white_trim"><color rgba="0.92 0.92 0.92 1.0"/></material>
+
+  <!-- ==================== 0. 根坐标系 (地面投影点) ==================== -->
+  <link name="base_footprint"/>
+
+  <joint name="base_footprint_joint" type="fixed">
+    <!-- 站立时躯干中心离地高度 0.165m -->
+    <origin xyz="0 0 0.165" rpy="0 0 0"/>
+    <parent link="base_footprint"/>
+    <child link="torso_link"/>
+  </joint>
+
+  <!-- ==================== 1. 躯干主体 (含电池仓、肚皮装甲、背包) ==================== -->
+  <link name="torso_link">
+    <xacro:box_inertia m="0.32" x="0.10" y="0.09" z="0.11"/>
+    <!-- 主胸腔外壳 -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.095 0.088 0.105"/></geometry>
+      <material name="duck_yellow"/>
+    </visual>
+    <!-- 前胸白色装饰面板 -->
+    <visual>
+      <origin xyz="0.046 0 -0.005" rpy="0 0.08 0"/>
+      <geometry><box size="0.008 0.068 0.075"/></geometry>
+      <material name="white_trim"/>
+    </visual>
+    <!-- 背部主控与电池仓背包 (树莓派Zero 2W / 2S锂电仓) -->
+    <visual>
+      <origin xyz="-0.056 0 0.005" rpy="0 0 0"/>
+      <geometry><box size="0.024 0.070 0.082"/></geometry>
+      <material name="servo_dark"/>
+    </visual>
+    <!-- 尾部小翘臀 -->
+    <visual>
+      <origin xyz="-0.058 0 -0.042" rpy="0 -0.45 0"/>
+      <geometry><box size="0.035 0.055 0.022"/></geometry>
+      <material name="duck_yellow"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.005 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.115 0.090 0.105"/></geometry>
+    </collision>
+  </link>
+  <gazebo reference="torso_link"><material>Gazebo/Yellow</material></gazebo>
+
+  <!-- 内置 IMU 传感器 (躯干中心) -->
+  <gazebo reference="torso_link">
+    <gravity>true</gravity>
+    <sensor name="imu_sensor" type="imu">
+      <always_on>true</always_on>
+      <update_rate>100</update_rate>
+      <visualize>false</visualize>
+      <plugin filename="libgazebo_ros_imu_sensor.so" name="imu_plugin">
+        <topicName>/microduck/imu</topicName>
+        <bodyName>torso_link</bodyName>
+        <updateRateHZ>100.0</updateRateHZ>
+        <gaussianNoise>0.005</gaussianNoise>
+        <xyzOffset>0 0 0</xyzOffset>
+        <rpyOffset>0 0 0</rpyOffset>
+        <frameName>torso_link</frameName>
+      </plugin>
+    </sensor>
+  </gazebo>
+
+  <!-- ==================== 2. 颈部与双目头部总成 (3-DOF) ==================== -->
+  <!-- 2.1 颈部俯仰舵机座 -->
+  <joint name="neck_pitch_joint" type="${'fixed' if mode == 'planar' else 'revolute'}">
+    <origin xyz="0.012 0 0.055" rpy="0 -0.10 0"/>
+    <parent link="torso_link"/>
+    <child link="neck_link"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-0.5" upper="0.6" effort="1.5" velocity="4.0"/>
+  </joint>
+
+  <link name="neck_link">
+    <xacro:cyl_inertia m="0.025" r="0.016" h="0.045" xyz="0 0 0.02"/>
+    <visual>
+      <origin xyz="0 0 0.020" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.016" length="0.042"/></geometry>
+      <material name="servo_dark"/>
+    </visual>
+  </link>
+  <gazebo reference="neck_link"><material>Gazebo/DarkGrey</material></gazebo>
+
+  <!-- 2.2 头部偏航 (左右转头) -->
+  <joint name="head_yaw_joint" type="${'fixed' if mode == 'planar' else 'revolute'}">
+    <origin xyz="0 0 0.042" rpy="0 0.10 0"/>
+    <parent link="neck_link"/>
+    <child link="head_yaw_link"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-1.2" upper="1.2" effort="1.5" velocity="5.0"/>
+  </joint>
+
+  <link name="head_yaw_link">
+    <xacro:cyl_inertia m="0.01" r="0.015" h="0.012"/>
+    <visual>
+      <geometry><cylinder radius="0.015" length="0.010"/></geometry>
+      <material name="servo_dark"/>
+    </visual>
+  </link>
+
+  <!-- 2.3 头部俯仰 (低头夹取餐巾纸的核心自由度，即便在planar模式下也可改为revolute单独控制) -->
+  <joint name="head_pitch_joint" type="${'fixed' if mode == 'planar' else 'revolute'}">
+    <origin xyz="0 0 0.008" rpy="0 0 0"/>
+    <parent link="head_yaw_link"/>
+    <child link="head_link"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-0.45" upper="0.85" effort="1.5" velocity="4.0"/>
+  </joint>
+
+  <!-- 头部主壳体 (BDX 标志性扁方双目头 + 侧耳天线) -->
+  <link name="head_link">
+    <xacro:box_inertia m="0.085" x="0.080" y="0.095" z="0.060" xyz="0.008 0 0.030"/>
+    <!-- 头部外壳 -->
+    <visual>
+      <origin xyz="0.005 0 0.030" rpy="0 0 0"/>
+      <geometry><box size="0.076 0.092 0.056"/></geometry>
+      <material name="duck_yellow"/>
+    </visual>
+    <!-- 前脸黑色护目镜框 -->
+    <visual>
+      <origin xyz="0.044 0 0.033" rpy="0 0 0"/>
+      <geometry><box size="0.006 0.082 0.036"/></geometry>
+      <material name="servo_dark"/>
+    </visual>
+    <!-- 左大眼镜头 (带白色外环) -->
+    <visual>
+      <origin xyz="0.048 0.023 0.033" rpy="0 ${M_PI/2} 0"/>
+      <geometry><cylinder radius="0.014" length="0.006"/></geometry>
+      <material name="white_trim"/>
+    </visual>
+    <visual>
+      <origin xyz="0.050 0.023 0.033" rpy="0 ${M_PI/2} 0"/>
+      <geometry><cylinder radius="0.010" length="0.006"/></geometry>
+      <material name="lens_black"/>
+    </visual>
+    <!-- 右大眼镜头 (略小一点还原BDX不对称萌感，或等大双目) -->
+    <visual>
+      <origin xyz="0.048 -0.023 0.033" rpy="0 ${M_PI/2} 0"/>
+      <geometry><cylinder radius="0.012" length="0.006"/></geometry>
+      <material name="white_trim"/>
+    </visual>
+    <visual>
+      <origin xyz="0.050 -0.023 0.033" rpy="0 ${M_PI/2} 0"/>
+      <geometry><cylinder radius="0.008" length="0.006"/></geometry>
+      <material name="lens_black"/>
+    </visual>
+    <!-- 左侧耳片天线 -->
+    <visual>
+      <origin xyz="-0.005 0.050 0.045" rpy="0.25 0 0"/>
+      <geometry><box size="0.018 0.005 0.042"/></geometry>
+      <material name="servo_dark"/>
+    </visual>
+    <!-- 右侧耳片天线 -->
+    <visual>
+      <origin xyz="-0.005 -0.050 0.045" rpy="-0.25 0 0"/>
+      <geometry><box size="0.018 0.005 0.042"/></geometry>
+      <material name="servo_dark"/>
+    </visual>
+    <!-- 上鸭嘴 (固定于头部前下方) -->
+    <visual>
+      <origin xyz="0.062 0 0.010" rpy="0 0.05 0"/>
+      <geometry><box size="0.046 0.048 0.008"/></geometry>
+      <material name="duck_orange"/>
+    </visual>
+    <collision>
+      <origin xyz="0.012 0 0.030" rpy="0 0 0"/>
+      <geometry><box size="0.095 0.095 0.058"/></geometry>
+    </collision>
+  </link>
+  <gazebo reference="head_link"><material>Gazebo/Yellow</material></gazebo>
+
+  <!-- ==================== 3. 可开合下鸭嘴夹爪 (拾取餐巾纸机构) ==================== -->
+  <joint name="beak_gripper_joint" type="${'fixed' if mode == 'planar' else 'revolute'}">
+    <origin xyz="0.040 0 0.004" rpy="0 0.15 0"/>
+    <parent link="head_link"/>
+    <child link="lower_beak_link"/>
+    <axis xyz="0 1 0"/>
+    <!-- 0.0 为闭合夹紧，0.55 rad 为张嘴 -->
+    <limit lower="0.0" upper="0.55" effort="1.0" velocity="3.0"/>
+  </joint>
+
+  <link name="lower_beak_link">
+    <xacro:box_inertia m="0.012" x="0.044" y="0.044" z="0.006" xyz="0.022 0 0"/>
+    <visual>
+      <origin xyz="0.022 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.044 0.044 0.006"/></geometry>
+      <material name="duck_orange"/>
+    </visual>
+    <collision>
+      <origin xyz="0.022 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.044 0.044 0.006"/></geometry>
+    </collision>
+  </link>
+  <gazebo reference="lower_beak_link">
+    <material>Gazebo/Orange</material>
+    <mu1>1.5</mu1>
+    <mu2>1.5</mu2>
+  </gazebo>
+
+  <!-- ==================== 4. 头顶磁吸硅钢片 + 无人机对准靶标 ==================== -->
+  <!-- 独立 Link，距离地面总高约 0.282m，专门供无人机电磁铁吸附连接 -->
+  <joint name="magnet_plate_joint" type="fixed">
+    <origin xyz="0.002 0 0.060" rpy="0 0 0"/>
+    <parent link="head_link"/>
+    <child link="magnet_plate_link"/>
+  </joint>
+
+  <link name="magnet_plate_link">
+    <xacro:cyl_inertia m="0.030" r="0.036" h="0.005"/>
+    <!-- 银色高导磁硅钢圆盘 -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.036" length="0.005"/></geometry>
+      <material name="metal_silver"/>
+    </visual>
+    <!-- 中心黑色对准十字/AprilTag底座示意 -->
+    <visual>
+      <origin xyz="0 0 0.0028" rpy="0 0 0"/>
+      <geometry><box size="0.038 0.038 0.001"/></geometry>
+      <material name="white_trim"/>
+    </visual>
+    <visual>
+      <origin xyz="0 0 0.0032" rpy="0 0 0"/>
+      <geometry><box size="0.026 0.026 0.001"/></geometry>
+      <material name="lens_black"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.036" length="0.005"/></geometry>
+    </collision>
+  </link>
+  <gazebo reference="magnet_plate_link"><material>Gazebo/Grey</material></gazebo>
+
+  <!-- 头部前置单目相机传感器 (用于MicroDuck识别桌上的餐巾纸) -->
+  <joint name="duck_camera_joint" type="fixed">
+    <origin xyz="0.052 0 0.033" rpy="0 0.25 0"/>
+    <parent link="head_link"/>
+    <child link="duck_camera_link"/>
+  </joint>
+  <link name="duck_camera_link"/>
+  <gazebo reference="duck_camera_link">
+    <sensor type="camera" name="duck_front_cam">
+      <update_rate>20.0</update_rate>
+      <camera name="head_cam">
+        <horizontal_fov>1.396</horizontal_fov>
+        <image><width>640</width><height>480</height><format>R8G8B8</format></image>
+        <clip><near>0.03</near><far>10.0</far></clip>
+      </camera>
+      <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
+        <alwaysOn>true</alwaysOn>
+        <cameraName>microduck/camera</cameraName>
+        <imageTopicName>image_raw</imageTopicName>
+        <cameraInfoTopicName>camera_info</cameraInfoTopicName>
+        <frameName>duck_camera_link</frameName>
+      </plugin>
+    </sensor>
+  </gazebo>
+
+  <!-- ==================== 5. 反关节双足腿部宏定义 (单腿 5-DOF，共 10-DOF) ==================== -->
+  <!-- side: "left" 或 "right" | reflect: 左腿为 1，右腿为 -1 -->
+  <xacro:macro name="duck_leg" params="side reflect">
+
+    <!-- 5.1 髋偏航关节 (Hip Yaw) -->
+    <joint name="${side}_hip_yaw_joint" type="${'fixed' if mode == 'planar' else 'revolute'}">
+      <origin xyz="0.0 ${reflect * 0.038} -0.052" rpy="0 0 0"/>
+      <parent link="torso_link"/>
+      <child link="${side}_hip_yaw_link"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="-0.6" upper="0.6" effort="2.5" velocity="6.0"/>
+    </joint>
+
+    <link name="${side}_hip_yaw_link">
+      <xacro:box_inertia m="0.025" x="0.028" y="0.026" z="0.024"/>
+      <visual>
+        <geometry><box size="0.028 0.026 0.022"/></geometry>
+        <material name="servo_dark"/>
+      </visual>
+    </link>
+    <gazebo reference="${side}_hip_yaw_link"><material>Gazebo/DarkGrey</material></gazebo>
+
+    <!-- 5.2 髋横滚关节 (Hip Roll) -->
+    <joint name="${side}_hip_roll_joint" type="${'fixed' if mode == 'planar' else 'revolute'}">
+      <origin xyz="0 ${reflect * 0.008} -0.016" rpy="0 0 0"/>
+      <parent link="${side}_hip_yaw_link"/>
+      <child link="${side}_hip_roll_link"/>
+      <axis xyz="1 0 0"/>
+      <limit lower="-0.45" upper="0.45" effort="2.5" velocity="6.0"/>
+    </joint>
+
+    <link name="${side}_hip_roll_link">
+      <xacro:box_inertia m="0.025" x="0.030" y="0.028" z="0.024"/>
+      <visual>
+        <geometry><box size="0.030 0.028 0.024"/></geometry>
+        <material name="servo_dark"/>
+      </visual>
+    </link>
+    <gazebo reference="${side}_hip_roll_link"><material>Gazebo/DarkGrey</material></gazebo>
+
+    <!-- 5.3 髋俯仰关节与大腿 (Hip Pitch / Thigh - 微屈站姿前倾 -0.42 rad) -->
+    <joint name="${side}_hip_pitch_joint" type="${'fixed' if mode == 'planar' else 'revolute'}">
+      <origin xyz="0 ${reflect * 0.006} -0.008" rpy="0 ${-0.42 if mode == 'planar' else 0.0} 0"/>
+      <parent link="${side}_hip_roll_link"/>
+      <child link="${side}_thigh_link"/>
+      <axis xyz="0 1 0"/>
+      <limit lower="-1.2" upper="1.2" effort="3.0" velocity="8.0"/>
+    </joint>
+
+    <link name="${side}_thigh_link">
+      <xacro:box_inertia m="0.035" x="0.022" y="0.020" z="0.055" xyz="0 0 -0.025"/>
+      <!-- 大腿黄色外骨骼护板 -->
+      <visual>
+        <origin xyz="0 0 -0.025" rpy="0 0 0"/>
+        <geometry><box size="0.024 0.020 0.054"/></geometry>
+        <material name="duck_yellow"/>
+      </visual>
+      <!-- 关节转轴装饰圆盘 -->
+      <visual>
+        <origin xyz="0 ${reflect * 0.011} 0" rpy="${M_PI/2} 0 0"/>
+        <geometry><cylinder radius="0.012" length="0.004"/></geometry>
+        <material name="servo_dark"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 -0.025" rpy="0 0 0"/>
+        <geometry><box size="0.022 0.018 0.050"/></geometry>
+      </collision>
+    </link>
+    <gazebo reference="${side}_thigh_link"><material>Gazebo/Yellow</material></gazebo>
+
+    <!-- 5.4 反关节膝盖与小腿 (Knee / Shin - 折向后方 +0.84 rad 还原鸟类跗跖构型) -->
+    <joint name="${side}_knee_joint" type="${'fixed' if mode == 'planar' else 'revolute'}">
+      <origin xyz="0 0 -0.048" rpy="0 ${0.84 if mode == 'planar' else 0.0} 0"/>
+      <parent link="${side}_thigh_link"/>
+      <child link="${side}_shin_link"/>
+      <axis xyz="0 1 0"/>
+      <limit lower="-0.2" upper="1.6" effort="3.0" velocity="8.0"/>
+    </joint>
+
+    <link name="${side}_shin_link">
+      <xacro:cyl_inertia m="0.030" r="0.008" h="0.052" xyz="0 0 -0.025"/>
+      <visual>
+        <origin xyz="0 0 -0.025" rpy="0 0 0"/>
+        <geometry><cylinder radius="0.008" length="0.052"/></geometry>
+        <material name="servo_dark"/>
+      </visual>
+      <visual>
+        <origin xyz="0 0 0" rpy="${M_PI/2} 0 0"/>
+        <geometry><cylinder radius="0.011" length="0.022"/></geometry>
+        <material name="servo_dark"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 -0.025" rpy="0 0 0"/>
+        <geometry><cylinder radius="0.008" length="0.048"/></geometry>
+      </collision>
+    </link>
+    <gazebo reference="${side}_shin_link"><material>Gazebo/DarkGrey</material></gazebo>
+
+    <!-- 5.5 踝俯仰关节与扁宽鸭蹼脚掌 (Ankle Pitch / Webbed Foot - 回正 -0.42 rad 保证脚底水平贴地) -->
+    <joint name="${side}_ankle_joint" type="${'fixed' if mode == 'planar' else 'revolute'}">
+      <origin xyz="0 0 -0.048" rpy="0 ${-0.42 if mode == 'planar' else 0.0} 0"/>
+      <parent link="${side}_shin_link"/>
+      <child link="${side}_foot_link"/>
+      <axis xyz="0 1 0"/>
+      <limit lower="-0.8" upper="0.8" effort="2.5" velocity="6.0"/>
+    </joint>
+
+    <link name="${side}_foot_link">
+      <xacro:box_inertia m="0.028" x="0.078" y="0.054" z="0.008" xyz="0.014 0 -0.004"/>
+      <!-- 踝部舵机连接座 -->
+      <visual>
+        <origin xyz="0 0 0.004" rpy="0 0 0"/>
+        <geometry><box size="0.024 0.022 0.012"/></geometry>
+        <material name="servo_dark"/>
+      </visual>
+      <!-- 橙色三趾扁宽鸭蹼脚板 -->
+      <visual>
+        <origin xyz="0.014 0 -0.004" rpy="0 0 0"/>
+        <geometry><box size="0.076 0.052 0.007"/></geometry>
+        <material name="duck_orange"/>
+      </visual>
+      <!-- 前趾分叉细节装饰 -->
+      <visual>
+        <origin xyz="0.050 ${reflect * 0.016} -0.004" rpy="0 0 ${reflect * 0.18}"/>
+        <geometry><box size="0.018 0.014 0.007"/></geometry>
+        <material name="duck_orange"/>
+      </visual>
+      <collision>
+        <origin xyz="0.014 0 -0.004" rpy="0 0 0"/>
+        <geometry><box size="0.078 0.054 0.008"/></geometry>
+      </collision>
+    </link>
+    <gazebo reference="${side}_foot_link">
+      <material>Gazebo/Orange</material>
+      <!-- 高摩擦防滑橡胶脚垫参数 -->
+      <kp>100000.0</kp>
+      <kd>10.0</kd>
+      <mu1>1.2</mu1>
+      <mu2>1.2</mu2>
+      <minDepth>0.001</minDepth>
+    </gazebo>
+
+  </xacro:macro>
+
+  <!-- 实例化左右双腿 -->
+  <xacro:duck_leg side="left"  reflect="1"/>
+  <xacro:duck_leg side="right" reflect="-1"/>
+
+  <!-- ==================== 6. 传动装置宏 (仅在 legged 关节步态模式下生效) ==================== -->
+  <xacro:if value="${mode == 'legged'}">
+    <xacro:macro name="simple_trans" params="joint_name">
+      <transmission name="${joint_name}_trans">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="${joint_name}">
+          <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="${joint_name}_motor">
+          <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+          <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+      </transmission>
+    </xacro:macro>
+
+    <xacro:simple_trans joint_name="neck_pitch_joint"/>
+    <xacro:simple_trans joint_name="head_yaw_joint"/>
+    <xacro:simple_trans joint_name="head_pitch_joint"/>
+    <xacro:simple_trans joint_name="beak_gripper_joint"/>
+    <xacro:simple_trans joint_name="left_hip_yaw_joint"/>
+    <xacro:simple_trans joint_name="left_hip_roll_joint"/>
+    <xacro:simple_trans joint_name="left_hip_pitch_joint"/>
+    <xacro:simple_trans joint_name="left_knee_joint"/>
+    <xacro:simple_trans joint_name="left_ankle_joint"/>
+    <xacro:simple_trans joint_name="right_hip_yaw_joint"/>
+    <xacro:simple_trans joint_name="right_hip_roll_joint"/>
+    <xacro:simple_trans joint_name="right_hip_pitch_joint"/>
+    <xacro:simple_trans joint_name="right_knee_joint"/>
+    <xacro:simple_trans joint_name="right_ankle_joint"/>
+
+    <gazebo>
+      <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+        <robotNamespace>/microduck</robotNamespace>
+      </plugin>
+    </gazebo>
+  </xacro:if>
+
+  <!-- ==================== 7. 平面全向移动插件 (默认 planar 模式启用) ==================== -->
+  <xacro:if value="${mode == 'planar'}">
+    <gazebo>
+      <plugin name="microduck_planar_controller" filename="libgazebo_ros_planar_move.so">
+        <commandTopic>/microduck/cmd_vel</commandTopic>
+        <odometryTopic>/microduck/odom</odometryTopic>
+        <odometryFrame>odom</odometryFrame>
+        <odometryRate>50.0</odometryRate>
+        <robotBaseFrame>base_footprint</robotBaseFrame>
+      </plugin>
+    </gazebo>
+  </xacro:if>
+
+</robot>

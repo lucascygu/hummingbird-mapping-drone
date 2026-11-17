@@ -1,0 +1,88 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <world name="indoor_coop_world">
+    <!-- 核心：加载动态关节连接插件，用于模拟电磁铁吸合与释放 -->
+    <plugin name="ros_link_attacher_plugin" filename="libgazebo_ros_link_attacher.so"/>
+
+    <include>
+      <uri>model://sun</uri>
+    </include>
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+
+    <!-- 物理引擎参数（配合PX4默认步长） -->
+    <physics name="default_physics" default="0" type="ode">
+      <ode>
+        <solver>
+          <type>quick</type>
+          <iters>50</iters>
+          <sor>1.3</sor>
+        </solver>
+      </ode>
+      <max_step_size>0.004</max_step_size>
+      <real_time_factor>1</real_time_factor>
+      <real_time_update_rate>250</real_time_update_rate>
+    </physics>
+
+    <!-- 室内围墙 (6m x 6m 房间，供Mid-360点云反射建图) -->
+    <model name="room_walls">
+      <static>true</static>
+      <link name="walls">
+        <collision name="wall_n"><pose>0 3 1.25 0 0 0</pose><geometry><box><size>6 0.15 2.5</size></box></geometry></collision>
+        <visual name="wall_n_v"><pose>0 3 1.25 0 0 0</pose><geometry><box><size>6 0.15 2.5</size></box></geometry></visual>
+        <collision name="wall_s"><pose>0 -3 1.25 0 0 0</pose><geometry><box><size>6 0.15 2.5</size></box></geometry></collision>
+        <visual name="wall_s_v"><pose>0 -3 1.25 0 0 0</pose><geometry><box><size>6 0.15 2.5</size></box></geometry></visual>
+        <collision name="wall_e"><pose>3 0 1.25 0 0 0</pose><geometry><box><size>0.15 6 2.5</size></box></geometry></collision>
+        <visual name="wall_e_v"><pose>3 0 1.25 0 0 0</pose><geometry><box><size>0.15 6 2.5</size></box></geometry></visual>
+        <collision name="wall_w"><pose>-3 0 1.25 0 0 0</pose><geometry><box><size>0.15 6 2.5</size></box></geometry></collision>
+        <visual name="wall_w_v"><pose>-3 0 1.25 0 0 0</pose><geometry><box><size>0.15 6 2.5</size></box></geometry></visual>
+      </link>
+    </model>
+
+    <!-- 任务目标桌子：位于 (2.0, 0.0)，桌面高度 0.75m，桌面尺寸 1.2m x 0.8m -->
+    <model name="task_table">
+      <static>true</static>
+      <pose>2.0 0.0 0 0 0 0</pose>
+      <link name="table_link">
+        <!-- 桌面 -->
+        <collision name="surface">
+          <pose>0 0 0.735 0 0 0</pose>
+          <geometry><box><size>1.2 0.8 0.03</size></box></geometry>
+        </collision>
+        <visual name="surface_visual">
+          <pose>0 0 0.735 0 0 0</pose>
+          <geometry><box><size>1.2 0.8 0.03</size></box></geometry>
+          <material><script><name>Gazebo/Wood</name></script></material>
+        </visual>
+        <!-- 四条桌腿 -->
+        <collision name="leg1"><pose>0.55 0.35 0.36 0 0 0</pose><geometry><cylinder><radius>0.025</radius><length>0.72</length></cylinder></geometry></collision>
+        <visual name="leg1_v"><pose>0.55 0.35 0.36 0 0 0</pose><geometry><cylinder><radius>0.025</radius><length>0.72</length></cylinder></geometry></visual>
+        <collision name="leg2"><pose>0.55 -0.35 0.36 0 0 0</pose><geometry><cylinder><radius>0.025</radius><length>0.72</length></cylinder></geometry></collision>
+        <visual name="leg2_v"><pose>0.55 -0.35 0.36 0 0 0</pose><geometry><cylinder><radius>0.025</radius><length>0.72</length></cylinder></geometry></visual>
+        <collision name="leg3"><pose>-0.55 0.35 0.36 0 0 0</pose><geometry><cylinder><radius>0.025</radius><length>0.72</length></cylinder></geometry></collision>
+        <visual name="leg3_v"><pose>-0.55 0.35 0.36 0 0 0</pose><geometry><cylinder><radius>0.025</radius><length>0.72</length></cylinder></geometry></visual>
+        <collision name="leg4"><pose>-0.55 -0.35 0.36 0 0 0</pose><geometry><cylinder><radius>0.025</radius><length>0.72</length></cylinder></geometry></collision>
+        <visual name="leg4_v"><pose>-0.55 -0.35 0.36 0 0 0</pose><geometry><cylinder><radius>0.025</radius><length>0.72</length></cylinder></geometry></visual>
+      </link>
+    </model>
+
+    <!-- 桌面上的餐巾纸：位于桌面右侧 (2.3, 0.0, 0.76)，可被MicroDuck吸/夹起 -->
+    <model name="napkin">
+      <pose>2.3 0.0 0.76 0 0 0</pose>
+      <link name="napkin_link">
+        <inertial>
+          <mass>0.01</mass>
+          <inertia><ixx>0.00001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.00001</iyy><iyz>0</iyz><izz>0.00001</izz></inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry><box><size>0.12 0.12 0.015</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.12 0.12 0.015</size></box></geometry>
+          <material><script><name>Gazebo/White</name></script></material>
+        </visual>
+      </link>
+    </model>
+  </world>
+</sdf>
