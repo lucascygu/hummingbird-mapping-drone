@@ -1,0 +1,16 @@
+<launch>
+  <!-- 1. 启动PX4 SITL与你现有的带Mid360四旋翼，指定world为我们刚建的室内地图 -->
+  <include file="$(find px4)/launch/mavros_posix_sitl.launch">
+    <arg name="world" value="$(find your_pkg)/worlds/indoor_coop.world"/>
+    <!-- 替换为你自己配置好Mid-360的无人机sdf模型名，例如 iris_mid360 -->
+    <arg name="vehicle" value="iris"/> 
+    <arg name="x" value="0.0"/>
+    <arg name="y" value="0.0"/>
+    <arg name="z" value="0.0"/>
+  </include>
+
+  <!-- 2. 在地面 (0.8, 0.0) 处生成 MicroDuck -->
+  <param name="microduck_description" textfile="$(find your_pkg)/urdf/microduck.urdf"/>
+  <node name="spawn_microduck" pkg="gazebo_ros" type="spawn_model" output="screen"
+        args="-urdf -param microduck_description -model microduck -x 0.8 -y 0.0 -z 0.02"/>
+</launch>
